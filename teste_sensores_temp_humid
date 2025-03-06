@@ -1,0 +1,67 @@
+#include <Adafruit_Sensor.h>
+#include <DHT.h>
+
+// Definição dos pinos para os sensores
+#define DHTPIN1 4  // Pino do primeiro sensor
+#define DHTPIN2 5  // Pino do segundo sensor
+
+// Defina o tipo do sensor: DHT11 ou DHT22
+#define DHTTYPE DHT11  // Altere para DHT11 se necessário
+
+// Criando objetos para os sensores
+DHT dht1(DHTPIN1, DHTTYPE);
+DHT dht2(DHTPIN2, DHTTYPE);
+
+void setup() 
+{
+    Serial.begin(115200);
+    Serial.println("Iniciando os sensores DHT...");
+    
+    dht1.begin();
+    dht2.begin();
+}
+
+void loop() 
+{
+    // Aguarde 2 segundos entre as leituras
+    delay(500);
+
+    // Leitura do primeiro sensor
+    float temperatura1 = dht1.readTemperature();
+    float humidade1 = dht1.readHumidity();
+
+    // Leitura do segundo sensor
+    float temperatura2 = dht2.readTemperature();
+    float humidade2 = dht2.readHumidity();
+
+    // Verifica se as leituras falharam
+    if (isnan(temperatura1) || isnan(humidade1)) {
+        Serial.println("Falha ao ler do sensor DHT1!");
+    } 
+    else 
+    {
+        Serial.print("Sensor 1 - Temperatura: ");
+        Serial.print(temperatura1);
+        Serial.println("°C");
+
+        Serial.print("Sensor 1 - Humidade: ");
+        Serial.print(humidade1);
+        Serial.println("%");
+    }
+
+    if (isnan(temperatura2) || isnan(humidade2)) {
+        Serial.println("Falha ao ler do sensor DHT2!");
+    } 
+    else 
+    {
+        Serial.print("Sensor 2 - Temperatura: ");
+        Serial.print(temperatura2);
+        Serial.println("°C");
+
+        Serial.print("Sensor 2 - Humidade: ");
+        Serial.print(humidade2);
+        Serial.println("%");
+    }
+
+    Serial.println("----------------------");
+}
