@@ -1,0 +1,32 @@
+// ESP32 que recebe os dados
+
+#include <WiFi.h>
+#include <esp_now.h>
+
+typedef struct struct_message {
+    float temperatura;
+} struct_message;
+
+struct_message dadosRecebidos;
+
+void receberCallback(const esp_now_recv_info_t *info, const uint8_t *dados, int len) {
+    memcpy(&dadosRecebidos, dados, sizeof(dadosRecebidos));
+    Serial.print("Temperatura recebida: ");
+    Serial.println(dadosRecebidos.temperatura);
+}
+
+void setup() {
+    Serial.begin(115200);
+    WiFi.mode(WIFI_STA);
+    
+    if (esp_now_init() != ESP_OK) {
+        Serial.println("Erro ao iniciar ESP-NOW");
+        return;
+    }
+
+    esp_now_register_recv_cb(receberCallback);
+}
+
+void loop() {
+    // Nada necessário no loop, o callback trata os dados recebidos
+}
