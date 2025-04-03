@@ -1,0 +1,20 @@
+void setup() {
+  // Inicia a comunicação serial a 115200 bauds
+  Serial.begin(115200);
+
+  // Aguarda até a porta Serial estar pronta (por segurança)
+  while (!Serial) {
+    ; // não faz nada
+  }
+
+  // Imprime uma mensagem inicial
+  Serial.println("Hello from ESP32-S3!");
+  Serial.println("Se leres isto, a placa está a funcionar corretamente!");
+}
+
+void loop() {
+  // Imprime algo a cada 1 segundo, só para teres certeza que está a correr
+  Serial.println("A correr...");
+
+  delay(1000);
+}
