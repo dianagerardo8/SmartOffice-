@@ -1,0 +1,40 @@
+// Simulador de Sensor de Luminosidade (LDR) com valores aleatórios
+
+const int pinoLDR = A0;  // Pino analógico onde o sensor estaria conectado
+int valorLDR = 0;        // Variável para armazenar o valor lido
+int porcentagemLuz = 0;  // Valor convertido para porcentagem
+
+void setup() {
+  Serial.begin(9600);    // Inicia a comunicação serial
+  Serial.println("Simulador de Sensor de Luminosidade");
+  Serial.println("Gerando valores aleatorios...");
+  randomSeed(analogRead(A5)); // Semente para geração de números aleatórios
+}
+
+void loop() {
+  // Gera um valor aleatório entre 0 e 1023 (faixa típica de um LDR)
+  valorLDR = random(0, 1024);
+  
+  // Converte para porcentagem (invertido pois LDR tem menor resistência com mais luz)
+  porcentagemLuz = map(valorLDR, 0, 1023, 100, 0);
+  
+  // Exibe os valores no Monitor Serial
+  Serial.print("Valor LDR: ");
+  Serial.print(valorLDR);
+  Serial.print(" | Luminosidade: ");
+  Serial.print(porcentagemLuz);
+  Serial.println("%");
+  
+  // Classifica a intensidade luminosa
+  if (porcentagemLuz < 20) {
+    Serial.println("Ambiente muito escuro");
+  } else if (porcentagemLuz < 50) {
+    Serial.println("Ambiente escuro");
+  } else if (porcentagemLuz < 70) {
+    Serial.println("Ambiente iluminado");
+  } else {
+    Serial.println("Ambiente muito claro");
+  }
+  
+  delay(2000); // Espera 2 segundos entre as leituras
+}
