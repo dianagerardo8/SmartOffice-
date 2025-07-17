@@ -1,0 +1,148 @@
+// Bibliotecas necessárias (ex: sensores, etc.)
+#include <Adafruit_Sensor.h>
+#include <DHT.h>
+#include <Wire.h>
+#include <BH1750.h>
+
+// ------------------ Pinos dos sensores -------------------
+#define DHTPIN 4
+#define DHTTYPE DHT11
+#define PIR_PIN 5
+
+// ------------------ Pinos dos LEDs -------------------
+#define LED_R 14   // LED RGB - Vermelho
+#define LED_G 27   // LED RGB - Verde
+#define LED_B 26   // LED RGB - Azul (juntos = branco)
+#define LED_CLIMA_ON 12   // LED Verde - Climatização Ligada
+#define LED_CLIMA_OFF 13  // LED Vermelho - Climatização Desligada
+
+// ------------------ Objetos -------------------
+DHT dht(DHTPIN, DHTTYPE);
+BH1750 lumin;
+
+int pirFlag = 0;  // Movimento: 0 = não, 1 = sim
+
+// ------------------ Temporização -------------------
+unsigned long lastMotionTime = 0;
+unsigned long lastSensorRead = 0;
+const unsigned long sensorInterval = 2000; // 2s entre leituras
+
+// ------------------ Setup -------------------
+void setup() 
+{
+  Serial.begin(115200);
+
+  // Iniciar sensores
+  dht.begin();
+  Wire.begin(21, 22); // SDA, SCL
+
+  // Verificar se o DHT e o sensor de Luminosidade estão a funcionar
+  float tempCheck = dht.readTemperature();
+  if (isnan(tempCheck)) {
+    Serial.println("Erroao iniciar o sensor DHT.");
+  } else {
+    Serial.println("Sensor DHT iniciado com sucesso!");
+  }
+
+  if (lumin.begin(BH1750::CONTINUOUS_HIGH_RES_MODE)) {
+    Serial.println("Sensor BH1750 iniciado com sucesso.");
+  } else {
+    Serial.println("Erro ao iniciar o sensor BH1750.");
+    while (1);
+  }
+
+  pinMode(PIR_PIN, INPUT);
+
+  // Configurar LEDs como saída
+  pinMode(LED_R, OUTPUT);
+  pinMode(LED_G, OUTPUT);
+  pinMode(LED_B, OUTPUT);
+  pinMode(LED_CLIMA_ON, OUTPUT);
+  pinMode(LED_CLIMA_OFF, OUTPUT);
+
+  // Inicialmente desligados
+  desligarLuzRGB();
+  digitalWrite(LED_CLIMA_ON, LOW);
+  digitalWrite(LED_CLIMA_OFF, HIGH);  // Climatização OFF
+}
+
+// ------------------ Funções auxiliares -------------------
+void ligarLuzBrancaRGB() {
+  digitalWrite(LED_R, HIGH);
+  digitalWrite(LED_G, HIGH);
+  digitalWrite(LED_B, HIGH);
+}
+
+void desligarLuzRGB() {
+  digitalWrite(LED_R, LOW);
+  digitalWrite(LED_G, LOW);
+  digitalWrite(LED_B, LOW);
+}
+
+// ------------------ Loop principal -------------------
+void loop() 
+{
+  unsigned long now = millis();
+
+  // Leitura de sensores a cada 2 segundos
+  if (now - lastSensorRead >= sensorInterval) {
+    lastSensorRead = now;
+
+    // ----- Sensor de temperatura -----
+    float temperatura = dht.readTemperature();
+    float humidade = dht.readHumidity();
+
+    if (!isnan(temperatura) && !isnan(humidade)) {
+      Serial.print("Temperatura: "); Serial.print(temperatura); Serial.println("°C");
+      Serial.print("Humidade: "); Serial.print(humidade); Serial.println("%");
+
+      // Automatismo climatização
+      if (temperatura > 30.0) {
+        digitalWrite(LED_CLIMA_ON, HIGH);
+        digitalWrite(LED_CLIMA_OFF, LOW);
+      } else {
+        digitalWrite(LED_CLIMA_ON, LOW);
+        digitalWrite(LED_CLIMA_OFF, HIGH);
+      }
+    } else {
+      Serial.println("Erro ao ler o DHT!");
+    }
+
+    Serial.println("----------------------");
+
+    // ----- Sensor de luminosidade -----
+    float lux = lumin.readLightLevel();
+    if (lux >= 0) {
+      Serial.print("Luminosidade: "); Serial.print(lux); Serial.println(" lx");
+
+      if (lux < 100) {
+        ligarLuzBrancaRGB();  // Ligar luz branca
+      } else {
+        desligarLuzRGB();     // Desligar luz branca
+      }
+    } else {
+      Serial.println("Erro ao ler BH1750!");
+    }
+
+    Serial.println("----------------------");
+  }
+
+  // ----- Sensor de movimento PIR (verificação contínua) -----
+  if (digitalRead(PIR_PIN) == HIGH) {
+    if (pirFlag == 0) {
+      Serial.println("Movimento DETETADO!");
+      pirFlag = 1;
+    }
+    lastMotionTime = now;
+  } else {
+    if (pirFlag == 1) {
+      Serial.println("Sem movimento DETETADO.");
+      pirFlag = 0;
+    }
+  }
+
+  // ----- Desliga luz RGB após 1 minuto sem movimento -----
+  if (pirFlag == 0 && (now - lastMotionTime > 5000)) {
+    desligarLuzRGB();
+  }
+}
